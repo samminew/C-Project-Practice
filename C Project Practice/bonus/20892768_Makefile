@@ -1,0 +1,48 @@
+# 20892768 - MATH 458 Bonus (MPI-parallel MV and MM, N=2000, P=1..8)
+CC      = mpicc
+CFLAGS  = -O2 -Wall -Wextra -std=c11
+SRC     = 20892768_main.c 20892768_vector.c 20892768_matrix.c
+OBJ     = $(SRC:.c=.o)
+BIN     = bonus_mpi
+DATA    = 20892768_bonus.txt
+PLOT    = 20892768_bonus_plot.png
+N       = 2000
+PROCS   = 1 2 3 4 5 6 7 8
+
+.PHONY: all run plot clean
+
+all: $(BIN)
+
+$(BIN): $(OBJ)
+	$(CC) $(CFLAGS) -o $@ $(OBJ)
+
+20892768_main.o: 20892768_main.c 20892768_vector.h 20892768_matrix.h
+	$(CC) $(CFLAGS) -c 20892768_main.c -o $@
+
+20892768_vector.o: 20892768_vector.c 20892768_vector.h
+	$(CC) $(CFLAGS) -c 20892768_vector.c -o $@
+
+20892768_matrix.o: 20892768_matrix.c 20892768_matrix.h
+	$(CC) $(CFLAGS) -c 20892768_matrix.c -o $@
+
+# main.c writes results itself (appends to $(DATA)); this target just
+# clears any old data file, then runs the binary once per process count.
+run: $(BIN)
+	@rm -f $(DATA)
+	@for p in $(PROCS); do \
+		echo "=== P=$$p ==="; \
+		mpirun --oversubscribe -np $$p ./$(BIN) $(N); \
+	done
+	@echo "Wrote $(DATA)"
+
+# columns in $(DATA): N P vv_time mv_time mm_time
+plot: $(DATA)
+	gnuplot -e "set terminal pngcairo size 1400,900 font 'Arial,14'; \
+set output '$(PLOT)'; set title '20892768 Bonus MPI scaling (N=$(N))'; \
+set xlabel 'Number of processes (P)'; set ylabel 'Wall time (s)'; set key right top; set grid; set logscale y; \
+plot '$(DATA)' u 2:3 w lp lw 2 pt 7 title 'V.V', \
+     '' u 2:4 w lp lw 2 pt 5 title 'M.V', '' u 2:5 w lp lw 2 pt 9 title 'M.M'"
+	@echo "Wrote $(PLOT)"
+
+clean:
+	rm -f $(OBJ) $(BIN) $(PLOT)

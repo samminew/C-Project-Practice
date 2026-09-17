@@ -6,11 +6,11 @@ MPI-parallel version of all three operations.
 
 Implements the three required prototypes:
 
-
+```c
 double vector_vector(int m, int n, double *vecA, double *vecB);
 void   matrix_vector(int m, int n, double *matA, double *vecA, double *matC);
 void   matrix_matrix(int m, int n, double *matA, double *matB, double *matC);
-
+```
 Matrices are stored as flat, row-major `double*` buffers (`A[i][j]` → `A[i*N + j]`),
 allocated on the heap. Data is generated internally (no file input). Each operation
 is timed with `clock()` across N = 500, 1000, 2000, 4000 (scaled down by one order of
